@@ -6,13 +6,13 @@ services:
       - -c
       - |
         apk add --no-cache inotify-tools docker-cli
-        MAPFILE="/datadir/plugin_data/store-subdomains/subdomain_store.map"
-        echo "Waiting for map file to be created..."
-        while [ ! -f "$$MAPFILE" ]; do
+        PLUGIN_DIR="/datadir/plugin_data/store-subdomains"
+        echo "Waiting for plugin data directory..."
+        while [ ! -d "$$PLUGIN_DIR" ]; do
           sleep 5
         done
-        echo "Map file found, starting watch..."
-        while inotifywait -e modify -e create "$$MAPFILE" 2>/dev/null; do
+        echo "Plugin directory found, starting watch..."
+        while inotifywait -e modify -e create "$$PLUGIN_DIR" 2>/dev/null; do
           echo "Map file changed, reloading nginx..."
           docker exec $${COMPOSE_PROJECT_NAME:-bitcart}-nginx-1 nginx -s reload || echo "Failed to reload nginx"
         done

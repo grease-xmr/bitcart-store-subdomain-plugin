@@ -9,6 +9,8 @@ class SubdomainRoutingSettings(Schema):
     enabled: bool = True
     reserved_subdomains: list[str] = ["www", "api", "admin", "store", "mail", "ftp", "static"]
     map_file_name: str = "subdomain_store.map"
+    static_redirects_file_name: str = "static_redirects.map"
+    static_redirects: dict[str, str] = {}  # subdomain -> target URL
 
 
 class SlugInput(Schema):

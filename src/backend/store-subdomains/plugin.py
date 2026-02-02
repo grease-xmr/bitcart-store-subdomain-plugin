@@ -50,7 +50,7 @@ class Plugin(BasePlugin):
             store.meta[SLUG_METADATA_KEY] = slug
             await session.flush()
 
-            await self._regenerate_map_file(session, settings)
+            await self._regenerate_store_map_file(session, settings)
 
             return SlugOutput(slug=slug, store_id=store.id)
 
@@ -68,7 +68,7 @@ class Plugin(BasePlugin):
                 del store.meta[SLUG_METADATA_KEY]
                 await session.flush()
 
-            await self._regenerate_map_file(session, settings)
+            await self._regenerate_store_map_file(session, settings)
 
             return SlugOutput(slug=None, store_id=store.id)
 
@@ -88,7 +88,7 @@ class Plugin(BasePlugin):
     async def startup(self) -> None:
         logger.info("store-subdomains plugin starting")
 
-        self.register_settings(SubdomainRoutingSettings)
+        self.register_settings(SubdomainRoutingSettings, on_change=self._on_settings_change)
 
         self.context.register_hook("db_create_store", self._on_store_change)
         self.context.register_hook("db_modify_store", self._on_store_modify)
@@ -97,7 +97,7 @@ class Plugin(BasePlugin):
         settings = await self.container.get(Settings)
         async with self.container() as request_container:
             session = await request_container.get(AsyncSession)
-            await self._regenerate_map_file(session, settings)
+            await self._regenerate_map_files(session, settings)
 
         logger.info("store-subdomains plugin started successfully")
 
@@ -111,7 +111,7 @@ class Plugin(BasePlugin):
         settings = await self.container.get(Settings)
         async with self.container() as request_container:
             session = await request_container.get(AsyncSession)
-            await self._regenerate_map_file(session, settings)
+            await self._regenerate_store_map_file(session, settings)
 
     async def _on_store_modify(self, store: models.Store, old_store: models.Store) -> None:
         old_slug = old_store.meta.get(SLUG_METADATA_KEY)
@@ -121,7 +121,15 @@ class Plugin(BasePlugin):
             settings = await self.container.get(Settings)
             async with self.container() as request_container:
                 session = await request_container.get(AsyncSession)
-                await self._regenerate_map_file(session, settings)
+                await self._regenerate_store_map_file(session, settings)
+
+    async def _on_settings_change(
+        self, old_settings: SubdomainRoutingSettings | None, new_settings: SubdomainRoutingSettings
+    ) -> None:
+        old_redirects = old_settings.static_redirects if old_settings else {}
+        if old_redirects != new_settings.static_redirects:
+            settings = await self.container.get(Settings)
+            await self._regenerate_static_redirects_file(settings)
 
     async def _find_store_by_slug(self, session: AsyncSession, slug: str) -> models.Store | None:
         from sqlalchemy import select
@@ -145,7 +153,11 @@ class Plugin(BasePlugin):
             return SubdomainRoutingSettings()
         return cast(SubdomainRoutingSettings, plugin_settings)
 
-    async def _regenerate_map_file(self, session: AsyncSession, settings: Settings) -> None:
+    async def _regenerate_map_files(self, session: AsyncSession, settings: Settings) -> None:
+        await self._regenerate_store_map_file(session, settings)
+        await self._regenerate_static_redirects_file(settings)
+
+    async def _regenerate_store_map_file(self, session: AsyncSession, settings: Settings) -> None:
         plugin_settings = await self._get_settings()
 
         if not plugin_settings.enabled:
@@ -163,6 +175,23 @@ class Plugin(BasePlugin):
         self._atomic_write(map_file_path, content)
 
         logger.info(f"Regenerated subdomain map file with {len(slugs)} entries")
+
+    async def _regenerate_static_redirects_file(self, settings: Settings) -> None:
+        plugin_settings = await self._get_settings()
+
+        if not plugin_settings.enabled:
+            logger.debug("store-subdomains is disabled, skipping static redirects file regeneration")
+            return
+
+        data_dir = self.data_dir()
+        redirects_file_path = os.path.join(data_dir, plugin_settings.static_redirects_file_name)
+
+        lines = [f"{subdomain} {url};" for subdomain, url in plugin_settings.static_redirects.items()]
+        content = "\n".join(lines) + ("\n" if lines else "")
+
+        self._atomic_write(redirects_file_path, content)
+
+        logger.info(f"Regenerated static redirects file with {len(plugin_settings.static_redirects)} entries")
 
     def _atomic_write(self, path: str, content: str) -> None:
         dir_name = os.path.dirname(path)

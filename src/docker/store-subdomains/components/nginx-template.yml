@@ -1,0 +1,4 @@
+services:
+  nginx-gen:
+    volumes:
+      - "./nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro"
