@@ -1,0 +1,24 @@
+services:
+  subdomain-inotify:
+    image: alpine:3.19
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache inotify-tools docker-cli
+        MAPFILE="/datadir/plugin_data/store-subdomains/subdomain_store.map"
+        echo "Waiting for map file to be created..."
+        while [ ! -f "$$MAPFILE" ]; do
+          sleep 5
+        done
+        echo "Map file found, starting watch..."
+        while inotifywait -e modify -e create "$$MAPFILE" 2>/dev/null; do
+          echo "Map file changed, reloading nginx..."
+          docker exec $${COMPOSE_PROJECT_NAME:-bitcart}-nginx-1 nginx -s reload || echo "Failed to reload nginx"
+        done
+    volumes:
+      - "bitcart_datadir:/datadir:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    restart: unless-stopped
+    depends_on:
+      - nginx
