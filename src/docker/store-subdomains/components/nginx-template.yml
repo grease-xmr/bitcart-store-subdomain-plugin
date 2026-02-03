@@ -1,4 +1,4 @@
 services:
   nginx-gen:
     volumes:
-      - "./nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro"
+      - "./plugins/docker/cj_store-subdomains/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro"

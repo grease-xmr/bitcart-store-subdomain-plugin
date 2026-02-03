@@ -8,9 +8,12 @@ from api.schemas.base import Schema
 class SubdomainRoutingSettings(Schema):
     enabled: bool = True
     reserved_subdomains: list[str] = ["www", "api", "admin", "store", "mail", "ftp", "static"]
+    base_domain: str = "local"  # base domain for generating server_name in static_sites
     map_file_name: str = "subdomain_store.map"
     static_redirects_file_name: str = "static_redirects.map"
     static_redirects: dict[str, str] = {}  # subdomain -> target URL
+    static_sites_file_name: str = "static_sites.conf"
+    static_sites: dict[str, str] = {}  # subdomain -> directory path
 
 
 class SlugInput(Schema):

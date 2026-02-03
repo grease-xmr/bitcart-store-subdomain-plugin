@@ -1,0 +1,4 @@
+services:
+  nginx:
+    volumes:
+      - ${STATIC_SITES_PATH:-./var/statics}:/var/statics:ro
