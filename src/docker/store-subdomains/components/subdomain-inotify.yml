@@ -5,7 +5,7 @@ services:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache inotify-tools docker-cli
+        apk add --no-cache inotify-tools=4.23.9.0-r0 docker-cli=25.0.5-r1
         PLUGIN_DIR="/datadir/plugin_data/store-subdomains"
         echo "Waiting for plugin data directory..."
         while [ ! -d "$$PLUGIN_DIR" ]; do

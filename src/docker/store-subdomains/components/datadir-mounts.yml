@@ -1,0 +1,9 @@
+# nginx-gen needs this for docker-gen's exists() checks at template render time.
+# nginx needs this for include resolution at config parse time.
+services:
+  nginx:
+    volumes:
+      - bitcart_datadir:/datadir:ro
+  nginx-gen:
+    volumes:
+      - bitcart_datadir:/datadir:ro
