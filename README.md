@@ -10,8 +10,8 @@ This plugin enables subdomain-based routing for Bitcart stores and static sites.
 
 - Bitcart 0.10.x or later
 - Docker deployment with nginx reverse proxy
-- Wildcard DNS record pointing to your server (`*.yourdomain.com`)
-- For HTTPS: Wildcard SSL certificate
+- DNS records pointing to your server — either a wildcard (`*.yourdomain.com`) or individual A records for each subdomain you use
+- For HTTPS: Either a wildcard SSL certificate or individual certificates per subdomain
 
 ## Installation
 
