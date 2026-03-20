@@ -203,11 +203,22 @@ class Plugin(BasePlugin):
         conf_path = os.path.join(data_dir, plugin_settings.static_sites_file_name)
 
         blocks = []
+        cert_name = plugin_settings.base_domain
         for subdomain, root_path in plugin_settings.static_sites.items():
             server_name = f"{subdomain}.{plugin_settings.base_domain}"
             blocks.append(f"""server {{
     listen 80;
     server_name {server_name};
+    return 301 https://$host$request_uri;
+}}
+
+server {{
+    listen 443 ssl http2;
+    server_name {server_name};
+
+    ssl_certificate /etc/nginx/certs/{cert_name}.crt;
+    ssl_certificate_key /etc/nginx/certs/{cert_name}.key;
+
     root {root_path};
     index index.html;
     location / {{
